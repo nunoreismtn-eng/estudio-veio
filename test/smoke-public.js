@@ -1,0 +1,27 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const WAV = '/home/claude/veio/test/fixtures/voice.wav';
+(async () => {
+  const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream','--use-file-for-fake-audio-capture=' + WAV] });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
+  await ctx.grantPermissions(['microphone']);
+  const page = await ctx.newPage(); const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('file:///home/claude/veio/site/index.html'); await page.waitForTimeout(500);
+  console.log('H1', await page.locator('h1').innerText(), '| onboarding:', await page.locator('text=Personaliza o estúdio').count());
+  await page.click('.page-head [data-act="settings"]');
+  await page.fill('#set-name', 'Rui'); await page.press('#set-name', 'Tab');
+  await page.fill('#set-company', 'Casa Pedra'); await page.press('#set-company', 'Tab');
+  await page.click('#sheet-close'); await page.waitForTimeout(200);
+  console.log('H1 after', await page.locator('h1').innerText(), '| onboarding:', await page.locator('text=Personaliza o estúdio').count());
+  await page.click('.tab[data-tab="treinar"]'); await page.fill('#q', 'tom ótimo'); await page.click('[data-act="open-ex"][data-id="tom-otimo"]');
+  console.log('STEP', (await page.locator('.steps-prev li').nth(2).innerText()).replace(/\n/g,' '));
+  await page.click('#sheet-close'); await page.click('.tab[data-tab="estudio"]');
+  console.log('autotr default on phone:', await page.locator('#opt-tr').isChecked(), '|', await page.locator('#tr-note').innerText());
+  await page.click('#btn-rec'); await page.waitForTimeout(6000); await page.click('#btn-rec');
+  await page.waitForSelector('.res-hero', { timeout: 20000 });
+  console.log('RESULT', (await page.locator('.res-hero').innerText()).replace(/\n/g,' | '));
+  const robots = await page.locator('meta[name="robots"]').getAttribute('content');
+  console.log('robots', robots, '| manifest', await page.locator('link[rel="manifest"]').getAttribute('href'));
+  console.log('ERRORS', JSON.stringify(errors));
+  await browser.close();
+})().catch(e => { console.error('FAIL', e); process.exit(1); });

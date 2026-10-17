@@ -1,0 +1,5 @@
+private.json
+dist/
+site/
+test/shots/
+__pycache__/
