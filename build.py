@@ -116,10 +116,11 @@ function page(req) {
     const finish = r => { if (!done && r) { done = true; resolve(r); } };
     const cached = () => caches.open(CACHE).then(c => c.match("./"));
     const slow = setTimeout(() => cached().then(finish), 4000);
-    fetch(req).then(res => {
+    // always revalidate the page with the server, so a new version shows on the next open
+    fetch(req.url, { cache: "no-cache", credentials: "same-origin" }).then(res => {
       clearTimeout(slow);
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./", copy)); }
-      finish(res);
+      finish(res.redirected ? new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers }) : res);
     }).catch(() => { clearTimeout(slow); cached().then(hit => finish(hit || Response.error())); });
   });
 }

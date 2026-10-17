@@ -224,6 +224,11 @@ textarea{min-height:120px;resize:vertical}
 .tipcard h3{font-size:1rem;font-weight:650}
 .tipcard p{color:var(--ink-2);font-size:.92rem;margin-top:2px}
 .tip-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.empty-list{list-style:none;margin:14px 0 6px;padding:0;display:flex;flex-direction:column;gap:12px}
+.empty-list li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.empty-list .ex-ic{background:var(--surface-2);color:var(--ink)}
+.empty-list b{display:block;font-weight:650;font-size:.95rem}
+.empty-list .sub{display:block;margin:1px 0 0}
 
 /* Library */
 .filters{display:flex;flex-direction:column;gap:10px}

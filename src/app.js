@@ -931,16 +931,17 @@ Escreve em português de Portugal, trata-o por tu.
 }
 
 /* ===================== PROGRESSO ===================== */
-function exampleSessions(){
-  const rnd=seeded(42), now=Date.now(), out=[];
-  const ids=["aquecimento","pitch-genebra","gancho","abertura-situacional","obj-preco","espinha","convite","quiz-sinais","fechar-descer","mostrar","provocacao","ma-noticia","sirenes","reviravolta","voz-jantar","fecho","escada-projecao","paixao"];
-  ids.forEach((id,i)=>{ const ex=EX_BY_ID[id], k=i/ids.length, at=now-(26-Math.round(i*1.45))*DAY-Math.round(rnd()*6)*3600000;
-    const s={ id:"ex"+i, at, kind:ex.kind, track:ex.track, challengeId:id, title:ex.title, isExample:true, lang:"pt" };
-    if(ex.kind==="fala"){ s.metrics={ pitchSD:1.9+1.6*k+rnd()*.5, wpm:178-28*k+rnd()*8, pausesPerMin:6+7*k+rnd()*2, downPct:38+28*k+rnd()*8, dynamicDb:5+4*k+rnd()*2, hesPerMin:3.6-2.4*k+rnd()*.6, durationS:(ex.seconds||45)*(0.8+rnd()*.4), sylRate:4.6 }; s.index=voiceIndex(metricValues(s.metrics,"pt")); }
-    if(ex.kind==="drill"){ s.durS=150; s.rating=3+Math.round(rnd()*2); s.eval={ verdict:["Feito","good"] }; }
-    if(ex.kind==="quiz"){ s.total=ex.questions.length; s.score=Math.min(s.total, 3+Math.round(rnd()*3)); }
-    s.xp=xpOf(s); out.push(s); });
-  return out.sort((a,b)=>b.at-a.at);
+// Before the first session there is nothing to show: no sample data, only what is coming and how to start.
+function progressoVazio(){
+  const items=[["chart","Índice de voz","De 0 a 100 em cada gravação, e a evolução sessão a sessão."],["wave","Perfil de voz","Tom, ritmo, pausas, finais, dinâmica e hesitações face à zona boa."],["flame","Sequência e atividade","Dias seguidos a treinar e o mapa das últimas 12 semanas."],["star","Níveis por área","XP em voz, histórias, social e negócio, do Bruto à Obra-prima."]];
+  return `
+  <header class="page-head"><div><p class="eyebrow">Ainda sem sessões</p><h1>Progresso</h1></div><button class="icon-btn" data-act="settings" aria-label="Definições">${ic("sliders")}</button></header>
+  <section class="card">
+    <h2>O teu progresso começa na primeira sessão</h2>
+    <p class="sub">Aqui só entram as tuas sessões: gravações, exercícios e quizzes. A partir da primeira, vês:</p>
+    <ul class="empty-list">${items.map(([i,t,d])=>`<li><span class="ex-ic">${ic(i)}</span><span><b>${t}</b><span class="sub">${d}</span></span></li>`).join("")}</ul>
+    <div class="tip-actions"><button class="btn primary" data-act="plan-start">Começar o plano de hoje</button><button class="btn" data-act="goto" data-tab="estudio">${ic("mic")} Gravar no Estúdio</button></div>
+  </section>`;
 }
 function lineChart(id, pts, o){
   const n=pts.length; if(n<2) return `<p class="sub">Precisas de pelo menos duas sessões para ver a evolução.</p>`;
@@ -963,7 +964,8 @@ function lineChart(id, pts, o){
   </div>`;
 }
 function viewProgresso(){
-  const real=S.sessions.length>0, all=real?S.sessions:exampleSessions(), now=Date.now();
+  if(!S.sessions.length) return progressoVazio();
+  const all=S.sessions, now=Date.now();
   const days=S.prog.range==="7"?7:S.prog.range==="30"?30:3650, from=startOfDay(now)-(days-1)*DAY, prevFrom=from-days*DAY;
   const inR=all.filter(s=>s.at>=from), prev=all.filter(s=>s.at>=prevFrom && s.at<from);
   const fala=inR.filter(s=>s.kind==="fala" && s.metrics).sort((a,b)=>a.at-b.at), falaPrev=prev.filter(s=>s.kind==="fala" && s.metrics);
@@ -988,8 +990,7 @@ function viewProgresso(){
     histHTML+=`<li><button class="hrow t-${s.track}" ${s.isExample?"disabled":`data-act="open-session" data-id="${h(s.id)}"`}><span class="ex-ic">${ic(KIND_ICON[s.kind]||"mic")}</span><span class="ex-txt"><span class="ex-title">${h(s.title)}</span><span class="ex-meta">${h(TRACKS[s.track].short)} · ${KINDS[s.kind]?KINDS[s.kind].name:""} · ${h(new Date(s.at).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}))}</span></span><span class="h-val">${h(sessionScoreLabel(s))}<small>+${s.xp||xpOf(s)} XP</small></span></button></li>`; });
   const table = idxPts.length ? `<details class="chart-table"><summary>Ver como tabela</summary><div class="wrap-x"><table><thead><tr><th>Data</th><th>Desafio</th><th class="num">Índice</th></tr></thead><tbody>${fala.slice().reverse().map(s=>`<tr><td>${h(dLabel(s.at))}</td><td>${h(s.title)}</td><td class="num">${s.index??"—"}</td></tr>`).join("")}</tbody></table></div></details>` : "";
   return `
-  <header class="page-head"><div><p class="eyebrow">${real?`${all.length} sessões no total`:"Pré-visualização"}</p><h1>Progresso</h1></div><button class="icon-btn" data-act="settings" aria-label="Definições">${ic("sliders")}</button></header>
-  ${real?"":`<p class="banner">Exemplo: assim fica o teu progresso. Os teus números substituem estes depois da primeira sessão.</p>`}
+  <header class="page-head"><div><p class="eyebrow">${all.length} ${all.length===1?"sessão":"sessões"} no total</p><h1>Progresso</h1></div><button class="icon-btn" data-act="settings" aria-label="Definições">${ic("sliders")}</button></header>
   <div class="row"><div class="seg" role="group" aria-label="Período">${ranges.map(([v,l])=>`<button aria-pressed="${S.prog.range===v}" data-act="prog-range" data-v="${v}">${l}</button>`).join("")}</div></div>
   <div class="kpis">
     <div class="kpi"><span class="k-label">Sessões</span><span class="k-val">${inR.length}</span>${delta(inR.length, prev.length)}</div>
@@ -1664,5 +1665,10 @@ let rzT=null; window.addEventListener("resize", ()=>{ clearTimeout(rzT); rzT=set
   Nav.init();
   // the public site works offline once opened: the service worker keeps the page and icons
   if(PUBLIC && !IN_VIEWER && "serviceWorker" in navigator && (location.protocol==="https:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)))
-    window.addEventListener("load", ()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+    window.addEventListener("load", ()=>{
+      // a new version that takes over right after opening is shown at once (never mid-task)
+      const had=!!navigator.serviceWorker.controller, t0=performance.now();
+      navigator.serviceWorker.addEventListener("controllerchange", ()=>{ if(had && performance.now()-t0<15000 && !Rec.active && !Rec.busy && !Sheet.isOpen && !Wake.why.size) location.reload(); });
+      navigator.serviceWorker.register("sw.js").catch(()=>{});
+    });
 })();
