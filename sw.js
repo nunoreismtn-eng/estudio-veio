@@ -1,6 +1,6 @@
 // Estúdio Veio: works offline once opened. Page network-first (updates arrive on the next open),
 // own files cache-first, Google Fonts kept for offline use.
-const CACHE = "veio-0f564418e7", FONTS = "veio-fonts";
+const CACHE = "veio-a3ca9450b5", FONTS = "veio-fonts";
 const CORE = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
@@ -14,10 +14,11 @@ function page(req) {
     const finish = r => { if (!done && r) { done = true; resolve(r); } };
     const cached = () => caches.open(CACHE).then(c => c.match("./"));
     const slow = setTimeout(() => cached().then(finish), 4000);
-    fetch(req).then(res => {
+    // always revalidate the page with the server, so a new version shows on the next open
+    fetch(req.url, { cache: "no-cache", credentials: "same-origin" }).then(res => {
       clearTimeout(slow);
       if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put("./", copy)); }
-      finish(res);
+      finish(res.redirected ? new Response(res.body, { status: res.status, statusText: res.statusText, headers: res.headers }) : res);
     }).catch(() => { clearTimeout(slow); cached().then(hit => finish(hit || Response.error())); });
   });
 }
