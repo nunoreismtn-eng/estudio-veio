@@ -1,0 +1,31 @@
+{
+  "id": "./",
+  "name": "Calepin · Français de la pierre",
+  "short_name": "Calepin",
+  "lang": "pt-PT",
+  "description": "Francês profissional para a pedra natural, ao estilo Pimsleur.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDEFEE",
+  "theme_color": "#162023",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

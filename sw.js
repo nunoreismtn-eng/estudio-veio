@@ -1,12 +1,15 @@
 // Estúdio Veio: works offline once opened. Page network-first (updates arrive on the next open),
 // own files cache-first, Google Fonts kept for offline use.
-const CACHE = "veio-a3ca9450b5", FONTS = "veio-fonts";
+// Other apps live under this path (e.g. francais/): this worker only touches its own page, files and caches.
+const CACHE = "veio-570c47d3a2", FONTS = "veio-fonts";
 const CORE = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+const SCOPE = new URL(self.registration.scope).pathname;
+const OWN = new Set(CORE.map(u => new URL(u, self.registration.scope).pathname));
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONTS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("veio-") && k !== CACHE && k !== FONTS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 function page(req) {
   return new Promise(resolve => {
@@ -27,8 +30,8 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
-    if (req.mode === "navigate") { e.respondWith(page(req)); return; }
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
+    if (req.mode === "navigate") { if (url.pathname === SCOPE || url.pathname === SCOPE + "index.html") e.respondWith(page(req)); return; }
+    if (OWN.has(url.pathname)) e.respondWith(caches.open(CACHE).then(c => c.match(req)).then(hit => hit || fetch(req)));
     return;
   }
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
