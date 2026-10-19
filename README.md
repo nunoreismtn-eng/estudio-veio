@@ -10,4 +10,4 @@ No Android, abre no Chrome e escolhe **Instalar app** (ou menu ⋮ → Adicionar
 
 Francês profissional para a pedra natural, ao estilo Pimsleur.
 
-**Abrir:** https://nunoreismtn-eng.github.io/estudio-veio/francais/
+**Abrir:** https://nunoreismtn-eng.github.io/Calepin/
