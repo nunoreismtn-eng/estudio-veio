@@ -102,13 +102,16 @@ icon(180, radius_frac=0).save(SITE / "apple-touch-icon.png")
 # service worker: opens offline once visited; page network-first so updates arrive on the next open
 SW = r"""// Estúdio Veio: works offline once opened. Page network-first (updates arrive on the next open),
 // own files cache-first, Google Fonts kept for offline use.
+// Other apps live under this path (e.g. francais/): this worker only touches its own page, files and caches.
 const CACHE = "veio-__VERSION__", FONTS = "veio-fonts";
 const CORE = ["./", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
+const SCOPE = new URL(self.registration.scope).pathname;
+const OWN = new Set(CORE.map(u => new URL(u, self.registration.scope).pathname));
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONTS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("veio-") && k !== CACHE && k !== FONTS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 function page(req) {
   return new Promise(resolve => {
@@ -129,8 +132,8 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
-    if (req.mode === "navigate") { e.respondWith(page(req)); return; }
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
+    if (req.mode === "navigate") { if (url.pathname === SCOPE || url.pathname === SCOPE + "index.html") e.respondWith(page(req)); return; }
+    if (OWN.has(url.pathname)) e.respondWith(caches.open(CACHE).then(c => c.match(req)).then(hit => hit || fetch(req)));
     return;
   }
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
@@ -141,7 +144,7 @@ self.addEventListener("fetch", e => {
   }
 });
 """
-digest = hashlib.sha256()
+digest = hashlib.sha256(b"sw-v2")   # v2: scoped to its own page, so sibling apps under this path are left alone
 for f in ["index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"]:
     digest.update((SITE / f).read_bytes())
 (SITE / "sw.js").write_text(SW.replace("__VERSION__", digest.hexdigest()[:10]), encoding="utf-8")
