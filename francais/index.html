@@ -2013,11 +2013,11 @@ function viewHoje(){
     <h1 class="display" lang="fr">${hr<18?"Bonjour":"Bonsoir"}${name?", "+h(name):""}.</h1>
     <p class="fr-date" lang="fr">${h(frDate())}</p>
   </section>
+  ${installCard()}
   ${voiceNotice("hoje")}
   ${heroCard(L)}
   <div class="duo">${reviewCard()}${phraseOfDay()}</div>
-  ${courseMini()}
-  ${installCard()}`;
+  ${courseMini()}`;
 }
 function heroCard(L){
   if(!L){
@@ -2068,9 +2068,20 @@ function courseMini(){
 }
 let installEvt=null;
 const STANDALONE = (()=>{ try{ return matchMedia("(display-mode: standalone)").matches || navigator.standalone===true; }catch(e){ return false; } })();
+// Install help on the phone: the browser's own prompt when it offers one, otherwise the steps for this browser
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+const IN_APP_BROWSER = /; wv\)|FBAN|FBAV|Instagram|Line\/|LinkedInApp|Snapchat|TikTok/i.test(navigator.userAgent);
 function installCard(){
-  if(IN_VIEWER || STANDALONE || !installEvt || Date.now() < Number(LS.get("install-later",0)||0)) return "";
-  return `<section class="notice n-info">${ic("download")}<div><b>Instala a app no telemóvel</b><p>Fica com ícone no ecrã principal, abre em ecrã inteiro e funciona sem rede.</p><div class="notice-a"><button class="btn sm primary" data-act="install">Instalar</button><button class="btn sm ghost" data-act="install-later">Agora não</button></div></div></section>`;
+  if(IN_VIEWER || STANDALONE || !IS_MOBILE || Date.now() < Number(LS.get("install-later",0)||0)) return "";
+  const later=`<button class="btn sm ghost" data-act="install-later">Agora não</button>`;
+  if(installEvt) return `<section class="notice n-info">${ic("download")}<div><b>Instala a app no telemóvel</b><p>Fica com ícone no ecrã principal, abre em ecrã inteiro e funciona sem rede.</p><div class="notice-a"><button class="btn sm primary" data-act="install">Instalar</button>${later}</div></div></section>`;
+  const ua=navigator.userAgent;
+  const steps = IN_APP_BROWSER
+    ? `Abriste o link dentro de outra app, e aí não dá para instalar. Toca nos <b>⋮</b> e escolhe <b>Abrir no ${IS_IOS?"Safari":"Chrome"}</b>; depois instala a partir daí.`
+    : IS_IOS ? `No Safari, toca em <b>Partilhar</b> e depois em <b>Adicionar ao ecrã principal</b>.`
+    : /SamsungBrowser/i.test(ua) ? `Toca no menu <b>≡</b> e escolhe <b>Adicionar página a</b> → <b>Ecrã principal</b>.`
+    : `No Chrome, toca nos <b>⋮</b> no canto superior direito e escolhe <b>Instalar app</b> ou <b>Adicionar ao ecrã principal</b>. Se só vires <b>Abrir no Chrome</b>, toca primeiro aí.`;
+  return `<section class="notice n-info">${ic("download")}<div><b>Instala a app no telemóvel</b><p>${steps}</p><div class="notice-a">${later}</div></div></section>`;
 }
 
 /* ---------- Lições ---------- */
